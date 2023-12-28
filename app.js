@@ -8,3 +8,4 @@ app.get('/', function (req, res) {
 app.listen(3000, function() {
     console.log("3000포트로 노드서버 오픈");
 });
+
