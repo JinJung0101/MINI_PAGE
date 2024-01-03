@@ -2,13 +2,13 @@ const express = require("express");
 const handlebars = require("express-handlebars");
 const app = express();
 const postService = require("./services/post-service");
-
+const { ObjectId } = require("mongodb");
 // req.body와 POST 요청을 해석하기 위한 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // mongodb 연결 함수
 const mongodbConnection = require("./configs/mongodb-connection");
-const { ObjectId } = require("mongodb");
+
 
 // templete engine으로 handlebar등록
 app.engine(
@@ -70,6 +70,24 @@ app.post("/modify/", async (req, res) => {
     res.redirect(`/detail/${id}`);
 });
 
+app.delete("/delete", async (req, res) => {
+    const { id, password } = req.body;
+    try {
+        // collection의 deleteOne을 사용해 게시글 하나를 삭제
+        const result = await collection.deleteOne({ _id: ObjectId(id), password: password });
+        // 삭제 결과과 잘못된 경우의 처리
+        if (result.deletedCount !== 1) {
+            console.log("삭제 실패");
+            return res.json({ isSuccess: false });
+        }
+        return res.json({ isSuccess: true });
+    } catch (error) {
+        // 에러가 난 경우의 처리
+        console.error(error);
+        return res.json({ isSuccess: false });
+    }
+});
+
 // 글쓰기
 app.post("/write", async (req, res) => {
     const post = req.body;
@@ -82,7 +100,6 @@ app.post("/write", async (req, res) => {
 // 상세페이지 이동
 app.get("/detail/:id", async(req, res) => {
     // 게시글 정보 가져오기
-    console.log("이게 아이디다.",req.params.id);
     const result = await postService.getDetailPost(collection, req.params.id);
     res.render("detail", {
         title: "테스트 게시판",
@@ -100,24 +117,6 @@ app.post("/check-password", async(req, res) => {
         return res.status(404).json({ isExist: false });
     } else {
         return res.json({ isExist: true });
-    }
-});
-
-app.delete("/delete", async (req, res) => {
-    const { id, password } = req.body;
-    try {
-        // collection의 deleteOne을 사용해 게시글 하나를 삭제
-        const result = await collection.deleteOne({ _id: ObjectId(id), password: password });
-        // 삭제 결과과 잘못된 경우의 처리
-        if (result.deletedCount !== 1) {
-            console.log("삭제 실패");
-            return res.json({ isSuccess: false });
-        }
-        return res.json({ isSuccess: true });
-    } catch (error) {
-        // 에러가 난 경우의 처리
-        console.error(error);
-        return res.json({ isSuccess: false });
     }
 });
 
