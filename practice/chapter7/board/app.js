@@ -43,7 +43,30 @@ app.get("/", async(req, res) => {
 
 // 쓰기 페이지 이동
 app.get("/write", (req, res) => {
-    res.render("write", { title: "테스트 게시판"});
+    res.render("write", { title: "테스트 게시판", mode: "create "});
+});
+
+// 수정 페이지로 이동 mode는 modify
+app.get("/modify/:id", async (req, res) => {
+    // getPostById() 함수로 게시글 데이터를 받아옴
+    const post = await postService.getPostById(collection, req.params.id);
+    console.log(post);
+    res.render("write", { title: "테스트 게시판", mode: "modify", post });
+});
+
+// 게시글 수정 API
+app.post("/modify/", async (req, res) => {
+    const { id, title, writer, password, content } = req.body;
+    const post = {
+        title,
+        writer,
+        password,
+        content,
+        createdDt: new Date().toISOString(),
+    };
+    // 업데이트 결과, try, catch로 실패시 처리 추가 해야함
+    const result = postService.updatePost(collection, id, post);
+    res.redirect(`/detail/${id}`);
 });
 
 // 글쓰기
@@ -55,6 +78,7 @@ app.post("/write", async (req, res) => {
     res.redirect(`/detail/${result.insertedId}`);
 });
 
+// 상세페이지 이동
 app.get("/detail/:id", async(req, res) => {
     // 게시글 정보 가져오기
     const result = await postService.getDetailPost(collection, req.params.id);
@@ -64,6 +88,18 @@ app.get("/detail/:id", async(req, res) => {
     });
 });
 
+// 패스워드 체크
+app.post("/check-password", async(req, res) => {
+    const { id, password } = req.body;
+    // postService의 getPostByIdAndPassword()함수를 사용해 게시글 데이터 확인
+    const post = await postService.getPostByIdAndPassword(collection, { id, password });
+    // 데이터가 있으면 isExist true, 없으면 isExist false
+    if (!post) {
+        return res.status(404).json({ isExist: false });
+    } else {
+        return res.json({ isExist: true });
+    }
+});
 
 let collection;
 
